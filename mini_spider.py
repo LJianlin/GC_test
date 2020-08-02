@@ -2,87 +2,127 @@
 # -*- coding:utf-8 -*-
 from bs4 import BeautifulSoup
 import socket
-import urllib.request as request
 import re
 import requests
 import zlib
 import codecs
 import configparser
 import utils
+import os
+from urllib.parse import urlparse
+import time
 
 
-# utls = "http://cup.baidu.com/spider/"
-target_utl = "http://www.baidu.com"
+# utl = "http://cup.baidu.com/spider/"
+utl = "http://www.baidu.com"
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64)\
     AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
 }
 
 
-class MiniSpider(object):
-    def __init__(self, seeds):
-        # 初始化当前抓取的深度
+class MiniSpider(utils.ParseConf):
+    def __init__(self, target_utl, conf_path):
+        super().__init__(conf_path)
+        self.target_utl = target_utl
         self.current_depth = 0
-        self.current_url = None
-        # 使用种子初始化url队列
+        self.current_url = ''
+        self.current_name = ''
+        self.hyper_links = []
+        self.img_links = []
         self.LinkQueue = utils.LinkQueue()
-        if isinstance(seeds, str):
-            self.LinkQueue.add_unvisited_url(seeds)
-        if isinstance(seeds, list):
-            for i in seeds:
+        if isinstance(self.target_utl, str):
+            self.LinkQueue.add_unvisited_url(self.target_utl)
+        if isinstance(self.target_utl, list):
+            for i in self.target_utl:
                 self.LinkQueue.add_unvisited_url(i)
-        print("Add the seeds url \"%s\" to the unvisited url list" % str(self.LinkQueue.unvisited_url))
+        print("Add the seeds url \"%s\" to the unvisited url list"
+              % str(self.LinkQueue.unvisited_url))
 
     # 抓取过程主函数
-    def crawling(self, current_depth):
-        while self.current_depth <= current_depth:
+    def crawling(self):
+        while self.current_depth <= self.max_depth:
             # 循环条件：待抓取的链接不空
             while not self.LinkQueue.unvisited_url_is_empty():
                 # 队头url出队列
                 self.current_url = self.LinkQueue.pop_unvisited_url()
-                # print("Pop out one url \"%s\" from unvisited url list" % visitUrl)
                 if self.current_url is None or self.current_url == "":
                     continue
+
+                urlparse_result = urlparse(self.current_url)
+                self.current_name = urlparse_result.scheme + '://' + urlparse_result.netloc
+
+                data = self.get_page_source(self.current_url, self.crawl_timeout)
                 # 获取超链接
-                links = self.get_hyper_links(self.current_url)
-                # print("Get %d new links" % len(links))
+                self.hyper_links = self.get_hyper_links(data)
                 # 将url放入已访问的url中
                 self.LinkQueue.add_visited_url(self.current_url)
-                # print("Visited url count: " + str(self.LinkQueue.getVisitedUrlCount()))
-                # print("Visited deepth: " + str(self.current_deepth))
                 # 未访问的url入列
-                for link in links:
+                for link in self.hyper_links:
                     self.LinkQueue.add_unvisited_url(link)
-                # print("%d unvisited links:" % len(self.LinkQueue.getUnvisitedUrl()))
-            self.current_depth += 1
 
-    # 获取源码中得超链接
-    def get_hyper_links(self, url):
-        links = []
-        data = self.get_page_source(url)
+                # self.get_img_links(data)
+            self.current_depth += 1
+        # img_links_set = set(self.img_links)
+        # with open("./result.txt", 'w', encoding='utf-8') as f:
+        #     for item in img_links_set:
+        #         f.write(item)
+
+    def get_hyper_links(self, data):
+        hyper_links = []
         if data[0] == 200:
             soup = BeautifulSoup(data[1])
             link_info = soup.find_all("a", {"href": re.compile('^http|^/{1,2}.')})
             for item in link_info:
                 href_value = item.get("href")
-                if 'http://' in href_value or 'https://' in href_value:
-                    links.append(href_value)
-                else:
-                    if href_value[1] == '/':
-                        href_value = "http:" + href_value
-                        print(href_value)
-                    else:
-                        base_url = self.get_base_url(self.current_url)
-                        href_value = "http:" + base_url + href_value
-                        print(href_value)
+                if re.match('http://|https://', href_value):
+                    hyper_links.append(href_value)
+                elif re.match('//', href_value):
+                    if 'https://' in self.current_name:
+                        href_value = 'https:' + href_value
+                    elif 'http://' in self.current_name:
+                        href_value = 'http:' + href_value
+                    hyper_links.append(href_value)
+                    print(href_value)
+                elif re.match('/', href_value):
+                    href_value = self.current_name + href_value
+                    hyper_links.append(href_value)
+                    print(href_value)
+                elif re.match('.+/', href_value):
+                    href_value = self.current_url + href_value[1::]
+                    hyper_links.append(href_value)
+                    print(href_value)
+        return hyper_links
 
-        return links
+    def get_img_links(self, data):
+        if data[0] == 200:
+            soup = BeautifulSoup(data[1])
+            img_info = soup.find_all("img", {"src": re.compile('\.jpg|\.gif|\.png|\.bmp]')})
+            for item in img_info:
+                href_value = item.get("src")
+                if re.match('http://|https://', href_value):
+                    self.img_links.append(href_value)
+                    print(href_value)
+                elif re.match('//', href_value):
+                    if 'https://' in self.current_name:
+                        href_value = 'https:' + href_value
+                    elif 'http://' in self.current_name:
+                        href_value = 'http:' + href_value
+                    self.img_links.append(href_value)
+                    print(href_value)
+                elif re.match('/', href_value):
+                    href_value = self.current_name + href_value
+                    self.img_links.append(href_value)
+                    print(href_value)
+                elif re.match('.+/', href_value):
+                    href_value = self.current_url + href_value[1::]
+                    self.img_links.append(href_value)
+                    print(href_value)
 
-    # 获取网页源码
-    def get_page_source(self, url, timeout=100, coding=None):
+    def get_page_source(self, url, timeout=10, coding=None):
+        time.sleep(self.crawl_interval)
         try:
-            socket.setdefaulttimeout(timeout)
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=timeout)
             # html_data = response.content
             html_encoding = response.apparent_encoding
             response.encoding = html_encoding
@@ -117,19 +157,29 @@ class MiniSpider(object):
             print(str(e))
             return [str(e), None]
 
-    def get_img_links(self, url, timeout=100, coding=None):
-        pass
-
-    def get_base_url(self, url):
-        data = self.get_page_source(url)
-        base_url = data[1]
-        return base_url
-
 
 if __name__ == "__main__":
-    spider = MiniSpider(target_utl)
-    # spider.crawling(0)
-    links = spider.get_hyper_links(target_utl)
+    # args = utils.args_parse()
+    # print(args.conf_path)
+    # spider = MiniSpider(utl, args.conf_path)
+    spider = MiniSpider(utl, "./spider.conf")
+    spider.crawling()
+
+    # utls = "http://cup.baidu.com/spider/"
+    # a = ['/aaa', 'bbb/']
+    # current_name = "http://cup.baidu.com"
+    # result = urlparse(utls)
+    # print(result.scheme + '://' + result.netloc)
+    # # print(re.match('.+/{1}', utls).group())
+    # for i in a:
+    #     print(i)
+    #     # if re.match('/', i):
+    #     #     href_value = current_name + i
+    #     #     print(href_value)
+    #     if re.match('.+/', i):
+    #         href_value = utls + i
+    #         print(href_value)
+    # print(re.match('h', utls).group())
 #############################################
 
     # response = requests.get(seeds, headers=headers)

@@ -3,6 +3,14 @@
 
 import codecs
 import configparser
+import argparse
+
+
+def args_parse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("conf_path", help="The conf file path", type=str)
+    args = parser.parse_args()
+    return args
 
 
 class ParseConf(object):
@@ -10,21 +18,22 @@ class ParseConf(object):
         self.conf_path = conf_path
         self.feed_file = None
         self.result = None
-        self.max_depth = 1
+        self.max_depth = 0
         self.crawl_interval = 1  # 抓取间隔. 单位: 秒
         self.crawl_timeout = 2  # 抓取超时. 单位: 秒
         self.thread_count = 1
+        self.conf_parse()
 
     def conf_parse(self):
         conf_parser = configparser.ConfigParser()
         try:
             conf_parser.readfp(codecs.open(self.conf_path, 'r', 'utf-8-sig'))
             self.feed_file = conf_parser.get("spider", "feed_file")
-            self.result = conf_parser.get("spider", "result")    # 抓取结果存储文件, 一行一个
-            self.max_depth = conf_parser.get("spider", "max_depth")  # 最大抓取深度(种子为0级)
-            self.crawl_interval = conf_parser.get("spider", "crawl_interval")  # 抓取间隔. 单位: 秒
-            self.crawl_timeout = conf_parser.get("spider", "crawl_timeout")  # 抓取超时. 单位: 秒
-            self.thread_count = conf_parser.get("spider", "thread_count")  # 抓取线程数
+            self.result = conf_parser.get("spider", "result")  # 抓取结果存储文件, 一行一个
+            self.max_depth = eval(conf_parser.get("spider", "max_depth"))  # 最大抓取深度(种子为0级)
+            self.crawl_interval = eval(conf_parser.get("spider", "crawl_interval"))  # 抓取间隔. 单位: 秒
+            self.crawl_timeout = eval(conf_parser.get("spider", "crawl_timeout"))  # 抓取超时. 单位: 秒
+            self.thread_count = eval(conf_parser.get("spider", "thread_count") )  # 抓取线程数
         except Exception as e:
             print("Fail to parse conf as Exception: {}".format(e))
 
