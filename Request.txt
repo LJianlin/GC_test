@@ -1,0 +1,97 @@
+在调研过程中，经常需要对一些网站进行定向抓取。由于python包含各种强大的库，使用python做定向抓取比较简单。
+请使用python开发一个迷你定向抓取器mini_spider.py，实现对种子链接的广度优先抓取，
+并把URL长相符合特定pattern的网页保存到磁盘上。
+
+可以使用Python3，鼓励使代码支持setuptools。
+
+要求:
+
+1. 内容描述:  使用python开发一个迷你定向抓取器mini_spider.py，实现对种子链接的[广度优先]抓取，
+并把URL符合特定[规则]的图片地址(绝对地址)保存到当前result.data文件
+
+2. 程序要求
+程序运行: 
+python mini_spider.py -c spider.conf 
+
+配置文件spider.conf: 
+[spider] 
+    feedfile: ./urls    # 种子文件路径 
+    result: ./result.data    # 抓取结果存储文件, 一行一个
+    max_depth: 6  # 最大抓取深度(种子为0级) 
+    crawl_interval: 1  # 抓取间隔. 单位: 秒 
+    crawl_timeout: 2  # 抓取超时. 单位: 秒 
+    thread_count: 8 #抓取线程数 
+
+种子文件urls:
+http://cup.baidu.com/spider/
+
+3. 考察点
+a. 支持命令行参数
+具体包含: -h(帮助)、-v(版本)、-c(配置文件)
+
+b. 抓取策略
+- 广度优先的网页抓取策略
+- 多线程抓取要求
+- 获取图片文件地址并存储到文件(gif|png|jpg|bmp为扩展格式的 url, 绝对路径存储到result.data文件中, 一行一个)  
+
+为防止出现 bug 导致内部服务器流量异常,  不再要求大家必须获取并[存储]图片文件. 将路径存储到result.data即可
+
+c. 健壮性要求
+- 单个网页抓取或解析失败，不能导致程序退出。在日志中记录错误原因并继续
+- 当程序完成所有抓取任务后，优雅退出
+- 从HTML提取链接时支持处理相对路径及绝对路径。
+- 需要能够处理不同字符编码的网页(例如utf-8或gb18030)。
+
+d. 优雅实现
+- 代码严格遵守百度python编码规范
+- 代码的可读性和可维护性好。注意模块、类、函数的设计和划分
+- 完成相应的单元测试和使用demo。你的demo必须可运行，单元测试有效而且通过
+
+4. Reference
+开源python库可能对你完成题目有所帮助:
+
+
+5. 成为GoodCoder评审
+
+在二审完成并通过Goodcoder后, 通过的同学会自动成为新的评审候选人.  
+通过同学有责任和义务为还在进行中的评审贡献自己的力量, 谢谢.
+
+
+re(正则表达式)
+参考: http://docs.python.org/2/library/re.html
+参考: http://www.cnblogs.com/huxi/archive/2010/07/04/1771073.html
+参考: http://blog.csdn.net/jgood/article/details/4277902
+
+gevent/threading(多线程)
+参考: http://docs.python.org/2/library/threading.html
+参考: http://www.cnblogs.com/huxi/archive/2010/06/26/1765808.html
+
+docopt/getopt/argparse(命令行参数处理)
+参考: https://github.com/docopt/docopt
+参考: http://docs.python.org/2/library/getopt.html
+参考: http://andylin02.iteye.com/blog/845355
+参考: http://docs.python.org/2/howto/argparse.html
+参考: http://www.cnblogs.com/jianboqi/archive/2013/01/10/2854726.html
+
+ConfigParser(配置文件读取)
+参考: http://docs.python.org/2/library/configparser.html
+参考: http://blog.chinaunix.net/uid-25890465-id-3312861.html
+
+urllib/urllib2/httplib(网页下载)
+参考: http://docs.python.org/2/library/urllib2.html
+参考: http://blog.csdn.net/wklken/article/details/7364328
+参考: http://www.nowamagic.net/academy/detail/1302872
+pyquery/beautifulsoup4/HTMLParser/SGMLParser(HTML解析)
+参考: http://docs.python.org/2/library/htmlparser.html
+参考: http://cloudaice.com/yong-pythonde-htmlparserfen-xi-htmlye-mian/
+参考: http://docs.python.org/2/library/sgmllib.html
+参考: http://pako.iteye.com/blog/592009
+
+urlparse(URL解析处理)
+参考: http://docs.python.org/2/library/urlparse.html
+参考: http://blog.sina.com.cn/s/blog_5ff7f94f0100qr3c.html
+
+logging(日志处理)
+参考: http://docs.python.org/2/library/logging.html
+参考: http://kenby.iteye.com/blog/1162698
+参考: http://my.oschina.net/leejun2005/blog/126713
