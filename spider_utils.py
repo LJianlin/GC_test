@@ -4,6 +4,40 @@
 import codecs
 import configparser
 import argparse
+import logging
+import platform
+import os
+from queue import Queue
+
+_simple_logger = None
+
+
+def __config_simple_logger():
+    global _simple_logger
+    _simple_logger = logging.Logger(name='mini-spider')
+    simple_logging_formatter = logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s %(funcName)s(): %(message)s')
+    # check_logger_dir
+    system_str = platform.system()
+    if system_str == 'Windows':
+        disk_path = os.path.dirname(os.path.abspath(__file__))
+        logging_path = disk_path + '\\tmp'
+        if not os.path.exists(logging_path):
+            os.makedirs(logging_path)
+        simple_logging_stream_handler = logging.FileHandler(logging_path + "\\mini-spider.log", 'a+')
+    else:
+        simple_logging_stream_handler = logging.FileHandler("/tmp/mini-spider.log", 'a+')
+    simple_logging_stream_handler.setFormatter(simple_logging_formatter)
+    _simple_logger.addHandler(simple_logging_stream_handler)
+    _simple_logger.setLevel(logging.DEBUG)
+    return _simple_logger
+
+
+def get_simple_logger():
+    if _simple_logger is None:
+        return __config_simple_logger()
+    else:
+        return _simple_logger
 
 
 def args_parse():
@@ -33,7 +67,7 @@ class ParseConf(object):
             self.max_depth = eval(conf_parser.get("spider", "max_depth"))  # 最大抓取深度(种子为0级)
             self.crawl_interval = eval(conf_parser.get("spider", "crawl_interval"))  # 抓取间隔. 单位: 秒
             self.crawl_timeout = eval(conf_parser.get("spider", "crawl_timeout"))  # 抓取超时. 单位: 秒
-            self.thread_count = eval(conf_parser.get("spider", "thread_count") )  # 抓取线程数
+            self.thread_count = eval(conf_parser.get("spider", "thread_count"))  # 抓取线程数
         except Exception as e:
             print("Fail to parse conf as Exception: {}".format(e))
 
@@ -86,3 +120,36 @@ class LinkQueue(object):
         return len(self.unvisited_url) == 0
 
 
+class MultipleLinkQueue(Queue):
+    def __init__(self, maxsize):
+        super().__init__(maxsize)
+        # 维护一个未访问过的url的队列，需要完成put和get
+        # 已访问的url集合
+        self.visited_url = []
+        # 待访问的url集合
+        self.unvisited_url = []
+        self.img_links = set()
+
+    def add_unvisited_url(self, item):
+        if item != "" and item not in self.visited_url and item not in self.unvisited_url:
+            self.unvisited_url.insert(0, item)
+            self.put(item)
+
+    def add_visited_url(self, url):
+        self.visited_url.append(url)
+
+    def pop_unvisited_url(self):
+        if self.unvisited_url_is_empty():
+            return None
+        else:
+            self.unvisited_url.pop()
+            return self.get()
+
+    def get_visited_url_count(self):
+        return len(self.visited_url)
+
+    def get_unvisited_url_count(self):
+        return len(self.unvisited_url)
+
+    def unvisited_url_is_empty(self):
+        return len(self.unvisited_url) == 0
