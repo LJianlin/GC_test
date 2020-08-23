@@ -1,4 +1,4 @@
-#################!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 from bs4 import BeautifulSoup
 import socket
@@ -224,10 +224,10 @@ class MiniSpider(spider_utils.ParseConf):
     #                 self.LinkQueue.add_unvisited_url(link)
 
 
-if __name__ == "__main__":
-    logging.info('-'*10 + "START" + '-'*10)
-    spider = MiniSpider(utl, "./spider.conf")
-    spider.crawling()
+# if __name__ == "__main__":
+#     logging.info('-'*10 + "START" + '-'*10)
+#     spider = MiniSpider(utl, "./spider.conf")
+#     spider.crawling()
     # print(spider.LinkQueue.qsize())
     # in_q = Queue()
     # in_q.put(utl)

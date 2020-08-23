@@ -1,0 +1,7 @@
+2020-08-22 22:40:51,087 mini-spider INFO test_spider(): ----------START----------
+2020-08-22 22:40:56,055 mini-spider ERROR get_page_source(): <urlopen error [WinError 10054] 远程主机强迫关闭了一个现有的连接。>
+2020-08-22 22:40:56,055 mini-spider ERROR get_page_source(): The error URL: http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11000002000001
+2020-08-22 22:40:58,242 mini-spider ERROR get_page_source(): timed out
+2020-08-22 22:40:58,242 mini-spider ERROR get_page_source(): The error URL: http://help.baidu.com/newadd?prod_id=1&category=4
+2020-08-22 22:40:58,429 mini-spider ERROR get_page_source(): timed out
+2020-08-22 22:40:58,461 mini-spider ERROR get_page_source(): The error URL: http://help.baidu.com
